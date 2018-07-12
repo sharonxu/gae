@@ -10,6 +10,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ""
 import tensorflow as tf
 import numpy as np
 import scipy.sparse as sp
+import networkx as nx
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
@@ -31,13 +32,16 @@ flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 
 flags.DEFINE_string('model', 'gcn_ae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
-flags.DEFINE_integer('features', 1, 'Whether to use features (1) or not (0).')
+flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
 
 # Load data
-adj, features = load_data(dataset_str)
+# adj is a a NxN adjacency matrix (scipy.sparse csr_matrix)
+# features is the feature matrix containing the graph signals (scipy.sparse.lil.lil_matrix)
+g = nx.karate_club_graph()  # nx.read_edgelist('data/com-amazon.ungraph.txt') # amazon data is too large?
+adj = nx.adjacency_matrix(g)
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
@@ -48,7 +52,7 @@ adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
 adj = adj_train
 
 if FLAGS.features == 0:
-    features = sp.identity(features.shape[0])  # featureless
+    features = sp.identity(adj.shape[0])  # featureless
 
 # Some preprocessing
 adj_norm = preprocess_graph(adj)
